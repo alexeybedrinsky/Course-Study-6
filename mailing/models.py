@@ -4,15 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 
 
-class CustomUser(AbstractUser):
-    email = models.EmailField(unique=True)
-    is_verified = models.BooleanField(default=False)
-    is_manager = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.username
-
-
 class Client(models.Model):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=100)
@@ -24,7 +15,7 @@ class Client(models.Model):
 
 
 class Message(models.Model):
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=255)
     body = models.TextField()
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
@@ -33,49 +24,54 @@ class Message(models.Model):
 
 
 class Mailing(models.Model):
-    PERIODICITY_CHOICES = [
-        ('daily', 'Раз в день'),
-        ('weekly', 'Раз в неделю'),
-        ('monthly', 'Раз в месяц'),
+    PERIOD_CHOICES = [
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
     ]
     STATUS_CHOICES = [
-        ('created', 'Создана'),
-        ('running', 'Запущена'),
-        ('paused', 'Приостановлена'),
-        ('completed', 'Завершена'),
+        ('created', 'Created'),
+        ('running', 'Running'),
+        ('paused', 'Paused'),
+        ('completed', 'Completed'),
     ]
     start_time = models.DateTimeField()
-    periodicity = models.CharField(max_length=10, choices=PERIODICITY_CHOICES)
+    periodicity = models.CharField(max_length=10, choices=PERIOD_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='created')
     message = models.ForeignKey(Message, on_delete=models.CASCADE)
     clients = models.ManyToManyField(Client)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        MailingLog.objects.create(
+            mailing=self,
+            status='created',
+            message=f'Mailing {self.id} created'
+        )
     def __str__(self):
-        return f"Рассылка {self.id} - {self.get_status_display()}"
+        return f"Mailing {self.id} - {self.status}"
 
 
 class MailingAttempt(models.Model):
-    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='attempts')
+    mailing = models.ForeignKey(Mailing, related_name='attempts', on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(default=timezone.now)
+    timestamp = models.DateTimeField(auto_now_add=True)
     status = models.BooleanField()
-    server_response = models.TextField(blank=True)
-    error_message = models.TextField(blank=True)
+    server_response = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Попытка для рассылки {self.mailing.id} {self.client.email}"
+        return f"Attempt for Mailing {self.mailing.id} to {self.client.email}"
 
 
 class MailingLog(models.Model):
     mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='logs')
-    timestamp = models.DateTimeField(default=timezone.now)
+    timestamp = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20)
     message = models.TextField()
 
     def __str__(self):
-        return f"Log for Mailing {self.mailing.id} at {self.timestamp}"
+        return f"Log for Mailing {self.mailing.id} - {self.status}"
 
 
 class BlogPost(models.Model):

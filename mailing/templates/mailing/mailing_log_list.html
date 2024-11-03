@@ -7,19 +7,19 @@
 <table class="table">
     <thead>
         <tr>
-            <th>ID рассылки</th>
-            <th>Время</th>
+            <th>Рассылка</th>
             <th>Статус</th>
             <th>Сообщение</th>
+            <th>Время</th>
         </tr>
     </thead>
     <tbody>
         {% for log in logs %}
         <tr>
             <td>{{ log.mailing.id }}</td>
-            <td>{{ log.timestamp }}</td>
             <td>{{ log.status }}</td>
             <td>{{ log.message }}</td>
+            <td>{{ log.timestamp }}</td>
         </tr>
         {% empty %}
         <tr>

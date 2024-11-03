@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'mailing',
     'django_apscheduler',
     'blog',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -75,6 +76,13 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -115,6 +123,7 @@ LOGIN_REDIRECT_URL = '/'
 
 LOGOUT_REDIRECT_URL = '/'
 
+
 STATIC_URL = 'static/'
 
 # Default primary key field type
@@ -151,6 +160,8 @@ SCHEDULER_CONFIG = {
 # Интервал запуска задачи рассылки (в секундах)
 MAILING_INTERVAL = 60 * 60 * 24  # раз в день (24 часа)
 
-AUTH_USER_MODEL = 'mailing.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
-
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
